@@ -1,3 +1,4 @@
+# 04_analytics.py
 """
 Analytics stage: produces summary views over the resolved,
 quality-checked data — a lightweight stand-in for the dashboard
