@@ -35,6 +35,14 @@ vitalink_pipeline/
 └── run_pipeline.py                    Runs all four stages in sequence
 ```
 
+## Data Source
+
+`source1_ehr_patients.csv` and `source2_lab_results.csv` are derived from the **MIMIC-III Clinical Database Demo (v1.4)**, a publicly available, de-identified critical care dataset:
+
+> Johnson, A., Pollard, T., & Mark, R. (2019). *MIMIC-III Clinical Database Demo* (version 1.4). PhysioNet. https://doi.org/10.13026/C2HM2Q
+
+Note: our proposal (Section 2) described generating synthetic patient data with Synthea. The prototype instead uses restructured MIMIC-III demo data — a real, IRB-approved, publicly licensed de-identified dataset rather than a fully synthetic one. `source3_pharmacy_logs.csv` (added for the final prototype) is separately fabricated demonstration data, not derived from MIMIC-III.
+
 ## Setup Instructions
 
 **Requirements:** Python 3.9+
