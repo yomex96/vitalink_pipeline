@@ -1,0 +1,13 @@
+pharmacy_record_id,patient_first_name,patient_last_name,patient_dob,medication,fill_date
+RX000001,Kenneth,Davis,1/29/2021,Amoxicillin,2025-11-02
+RX000002,Melissa,Wright,2009-12-20,Albuterol,2025-09-14
+RX000003,Michael,Garcia,1957-05-26,Metformin,2026-01-08
+RX000004,Margaret,Moore,09/10/2013,Amoxicillin,2025-12-19
+RX000005,Steven,Miller,1972-01-08,Lisinopril,2026-02-11
+RX000006,Paul,King,06/19/2025,Ibuprofen,2025-10-30
+RX000007,Patricia,Thomas,6/9/2011,Cetirizine,2025-08-22
+RX000008,Angela,Foster,1990-03-15,Metformin,2026-01-20
+RX000009,Brian,Chen,1985-11-02,Atorvastatin,2025-07-09
+RX000010,Kenneth,Davis,1/29/2021,Ibuprofen,2026-03-05
+RX000011,Margaret,Moore,09/10/2013,Albuterol,2026-01-30
+RX000012,Nicole,Bennett,1978-06-24,Metformin,2025-09-17

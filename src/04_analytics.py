@@ -1,4 +1,3 @@
-# 04_analytics.py
 """
 Analytics stage: produces summary views over the resolved,
 quality-checked data — a lightweight stand-in for the dashboard
@@ -38,8 +37,21 @@ def generate_reports():
         review_summary = pd.read_sql(
             "SELECT COUNT(*) AS pending_review_pairs FROM entity_resolution_review_queue", conn
         )
-        print(f"\nEntity resolution pairs pending manual review: "
+        print(f"\nEntity resolution pairs pending manual review (within EHR source): "
               f"{review_summary['pending_review_pairs'][0]}")
+
+        rx_review_summary = pd.read_sql(
+            "SELECT COUNT(*) AS pending FROM pharmacy_entity_resolution_review_queue", conn
+        )
+        print(f"Pharmacy cross-source matches pending manual review: "
+              f"{rx_review_summary['pending'][0]}")
+
+        rx_new = pd.read_sql("""
+            SELECT COUNT(*) AS n FROM fact_pharmacy_fulfillment
+            WHERE enterprise_patient_id NOT IN (SELECT enterprise_patient_id FROM dim_patients)
+              AND enterprise_patient_id IS NOT NULL
+        """, conn)
+        print(f"Patients identified only through the pharmacy source: {rx_new['n'][0]}")
     finally:
         conn.close()
 

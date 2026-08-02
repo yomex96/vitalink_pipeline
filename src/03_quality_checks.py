@@ -64,6 +64,17 @@ def run_quality_checks():
         # --- Entity resolution confidence: size of manual review queue ---
         print(f"  Entity resolution: {len(review_queue)} match pair(s) awaiting manual review")
 
+        # --- Cross-source resolution (pharmacy): completeness + confidence ---
+        fact_rx = pd.read_sql("SELECT * FROM fact_pharmacy_fulfillment", conn)
+        rx_review_queue = pd.read_sql("SELECT * FROM pharmacy_entity_resolution_review_queue", conn)
+        rx_total = len(fact_rx)
+        rx_pending = fact_rx["enterprise_patient_id"].isna().sum()
+        rx_matched_existing = fact_rx["enterprise_patient_id"].isin(dim_patients["enterprise_patient_id"]).sum()
+        rx_new_patients = rx_total - rx_pending - rx_matched_existing
+        print(f"  Cross-source (pharmacy): {rx_total} records, {rx_matched_existing} matched to "
+              f"existing EHR patients, {rx_new_patients} patient(s) identified only via pharmacy "
+              f"(retained, not dropped), {len(rx_review_queue)} pending manual review")
+
         print()
         if not issues:
             print("All Data Quality checks passed!")

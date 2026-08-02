@@ -28,6 +28,8 @@ MIN_EXPECTED_LAB_ROWS = 1
 
 REQUIRED_PATIENT_COLS = ["local_id", "first_name", "last_name", "dob", "zip_code", "ssn"]
 REQUIRED_LAB_COLS = ["lab_id", "local_patient_id", "test_code", "result_value", "result_date"]
+REQUIRED_PHARMACY_COLS = ["pharmacy_record_id", "patient_first_name", "patient_last_name",
+                          "patient_dob", "medication", "fill_date"]
 
 
 def load_csv(path: Path, required_cols: list[str], label: str) -> pd.DataFrame:
@@ -127,15 +129,55 @@ def clean_labs(df_l: pd.DataFrame) -> pd.DataFrame:
     return labs_clean
 
 
+def clean_pharmacy(df_rx: pd.DataFrame) -> pd.DataFrame:
+    """
+    Source 3: pharmacy fulfillment logs. Deliberately has NO local_id
+    shared with the EHR source — only patient name and DOB identify
+    the patient, matching the proposal's description of a fifth source
+    (pharmacy) contributing its own isolated ID namespace. This is the
+    dataset that lets entity resolution demonstrate genuine cross-source
+    identity matching, rather than a same-namespace key lookup.
+    """
+    before = len(df_rx)
+
+    rx_clean = pd.DataFrame()
+    rx_clean["pharmacy_record_id"] = df_rx["pharmacy_record_id"].astype(str).str.strip()
+    rx_clean["patient_first_name"] = df_rx["patient_first_name"].astype(str).str.strip()
+    rx_clean["patient_last_name"] = df_rx["patient_last_name"].astype(str).str.strip()
+    rx_clean["patient_dob"] = parse_dob(df_rx["patient_dob"]).dt.strftime("%Y-%m-%d")
+    rx_clean["medication"] = df_rx["medication"].astype(str).str.strip()
+    rx_clean["fill_date"] = parse_dob(df_rx["fill_date"]).dt.strftime("%Y-%m-%d")
+
+    valid_mask = (
+        rx_clean["pharmacy_record_id"].ne("")
+        & rx_clean["patient_first_name"].ne("")
+        & rx_clean["patient_last_name"].ne("")
+        & rx_clean["patient_dob"].notna()
+        & rx_clean["fill_date"].notna()
+    )
+    quarantined = (~valid_mask).sum()
+    rx_clean = rx_clean[valid_mask].reset_index(drop=True)
+
+    fail_rate = quarantined / before if before else 0
+    print(f"  • Pharmacy: {before} read, {quarantined} quarantined ({fail_rate:.1%}), "
+          f"{len(rx_clean)} staged")
+    if fail_rate > 0.05:
+        print("  ⚠️  Validation failure rate exceeds 5% threshold — review source file.")
+
+    return rx_clean
+
+
 def clean_and_ingest():
     print("🧹 Ingesting and validating VitaLink source data...")
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     df_p = load_csv(DATA_DIR / "source1_ehr_patients.csv", REQUIRED_PATIENT_COLS, "EHR patients")
     df_l = load_csv(DATA_DIR / "source2_lab_results.csv", REQUIRED_LAB_COLS, "Lab results")
+    df_rx = load_csv(DATA_DIR / "source3_pharmacy_logs.csv", REQUIRED_PHARMACY_COLS, "Pharmacy logs")
 
     patients_clean = clean_patients(df_p)
     labs_clean = clean_labs(df_l)
+    pharmacy_clean = clean_pharmacy(df_rx)
 
     # Row-count anomaly check (simplified stand-in for the 7-day
     # rolling-average alert described in the proposal).
@@ -148,6 +190,7 @@ def clean_and_ingest():
     try:
         patients_clean.to_sql("stg_ehr_patients", conn, if_exists="replace", index=False)
         labs_clean.to_sql("stg_lab_results", conn, if_exists="replace", index=False)
+        pharmacy_clean.to_sql("stg_pharmacy_logs", conn, if_exists="replace", index=False)
     finally:
         conn.close()
 

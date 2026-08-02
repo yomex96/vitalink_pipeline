@@ -74,6 +74,46 @@ CREATE TABLE IF NOT EXISTS entity_resolution_review_queue (
 );
 
 -- ============================================================
+-- PHARMACY SOURCE  (Source 3 — cross-namespace resolution)
+-- Deliberately carries NO identifier shared with the EHR source —
+-- only patient name and DOB. This is the source that demonstrates
+-- genuine cross-source entity resolution (matching an unrelated ID
+-- space against the master patient index), as opposed to the
+-- lab source, which already shares the EHR's local_id.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS stg_pharmacy_logs (
+    pharmacy_record_id   TEXT PRIMARY KEY,
+    patient_first_name   TEXT NOT NULL,
+    patient_last_name    TEXT NOT NULL,
+    patient_dob          TEXT NOT NULL,
+    medication           TEXT NOT NULL,
+    fill_date             TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fact_pharmacy_fulfillment (
+    pharmacy_record_id    TEXT PRIMARY KEY,
+    patient_first_name    TEXT NOT NULL,
+    patient_last_name     TEXT NOT NULL,
+    patient_dob           TEXT NOT NULL,
+    medication            TEXT NOT NULL,
+    fill_date             TEXT NOT NULL,
+    enterprise_patient_id TEXT   -- matched to an existing EHR patient,
+                                  -- OR a newly minted EPI if this patient
+                                  -- is known only through pharmacy data,
+                                  -- OR NULL if pending manual review
+);
+
+CREATE TABLE IF NOT EXISTS pharmacy_entity_resolution_review_queue (
+    pharmacy_record_id              TEXT NOT NULL,
+    pharmacy_name                   TEXT NOT NULL,
+    candidate_master_name           TEXT NOT NULL,
+    candidate_enterprise_patient_id TEXT NOT NULL,
+    dob                             TEXT NOT NULL,
+    similarity_score                REAL NOT NULL
+);
+
+-- ============================================================
 -- Sample queries demonstrating the use case
 -- (patient-level lab activity; used in src/04_analytics.py)
 -- ============================================================
